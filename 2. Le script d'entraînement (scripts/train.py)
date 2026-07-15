@@ -1,0 +1,57 @@
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
+# 1. Génération ou chargement des données (Simulation de données de Churn clients)
+np.random.seed(42)
+n_samples = 1000
+data = pd.DataFrame({
+    'Feature_1': np.random.randn(n_samples),
+    'Feature_2': np.random.randn(n_samples) * 10,
+    'Feature_3': np.random.choice([0, 1], size=n_samples),
+    'Churn': np.random.choice([0, 1], size=n_samples, p=[0.7, 0.3])
+})
+
+X = data[['Feature_1', 'Feature_2', 'Feature_3']]
+y = data['Churn']
+
+# Split train/test
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 2. Entraînement du modèle RandomForest
+clf = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
+clf.fit(X_train, y_train)
+
+# Prédictions
+y_pred = clf.predict(X_test)
+
+# 3. Génération des métriques et écriture dans metrics.txt
+accuracy = accuracy_score(y_test, y_pred)
+report = classification_report(y_test, y_pred)
+
+with open("metrics.txt", "w") as f:
+    f.write("=== RESULTATS DE L'ENTRAINEMENT ===\n")
+    f.write(f"Accuracy Score: {accuracy:.4f}\n\n")
+    f.write("Classification Report:\n")
+    f.write(report)
+
+print("Métriques exportées avec succès dans metrics.txt")
+
+# 4. Génération de la Matrice de Confusion (Confusion Matrix)
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Resté', 'Chun'], yticklabels=['Resté', 'Churn'])
+plt.ylabel('Vrai Churn')
+plt.xlabel('Prédiction')
+plt.title('Matrice de Confusion (Modèle Churn)')
+plt.tight_layout()
+
+# Sauvegarde graphique
+plt.savefig("confusion_matrix.png")
+plt.close()
+print("Matrice de confusion sauvegardée sous confusion_matrix.png")
