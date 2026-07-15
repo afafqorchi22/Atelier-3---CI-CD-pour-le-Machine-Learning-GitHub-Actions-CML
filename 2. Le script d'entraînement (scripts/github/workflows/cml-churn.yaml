@@ -1,0 +1,58 @@
+name: Model-Training-with-CML
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+# Permet d'octroyer les permissions d'écriture pour poster des commentaires sur le commit/la PR
+permissions: write-all
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Récupération (Checkout) du code source
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Configuration de l'environnement Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+
+      # 3. Installation de CML (Continuous Machine Learning)
+      - name: Setup CML
+        uses: iterative/setup-cml@v1
+
+      # 4. Installation des dépendances et exécution du script ML
+      - name: Train & Evaluate Model
+        run: |
+          pip install -r requirements.txt
+          python scripts/train.py
+
+      # 5. Publication automatique du rapport CML
+      - name: Generate and Publish CML Report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Création du document Markdown de rapport
+          echo "## 📊 Rapport d'entraînement automatique (CI/CD - Churn)" > report.md
+          echo "" >> report.md
+          
+          # Insertion des métriques calculées
+          echo "### 📈 Métriques d'évaluation" >> report.md
+          echo "\`\`\`text" >> report.md
+          cat metrics.txt >> report.md
+          echo "\`\`\`" >> report.md
+          echo "" >> report.md
+          
+          # Publication et insertion de l'image de la matrice de confusion
+          echo "### 🔍 Matrice de confusion" >> report.md
+          cml image publish confusion_matrix.png --md >> report.md
+          
+          # Envoi du rapport en commentaire sous l'activité Git concernée (Push ou PR)
+          cml send-comment report.md
